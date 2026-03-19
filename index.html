@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Для тебе ❤️</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 1;
+        }
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff4d6d;
+            font-size: 5rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #ff1a4c, 0 0 40px #ff1a4c;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+        }
+        .message.show {
+            opacity: 1;
+        }
+        .small-text {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            font-family: 'Arial', sans-serif;
+            z-index: 3;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .btn {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            background: #ff4d6d;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px #ff4d6d;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid #fff3;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .btn:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 0 30px #ff4d6d;
+        }
+        .btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="heartCanvas"></canvas>
+    <div class="small-text" id="smallText">не злись пж не будь злючкой ато мне страшно :)</div>
+    <div class="message" id="message">ТИ ЛОХ</div>
+    <button class="btn" id="startBtn">ЗАПУСТИТИ СЕРЦЕ</button>
+
+    <script>
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageEl = document.getElementById('message');
+        const startBtn = document.getElementById('startBtn');
+
+        // Размеры canvas
+        let width, height;
+        let particles = [];
+        let animationId = null;
+        let state = 'idle'; // idle, forming, exploding, showMessage
+        let formingProgress = 0;
+        let explosionTime = 0;
+        const formingSpeed = 0.02;
+        const explosionDuration = 1.5; // секунды
+
+        // Количество точек
+        const PARTICLE_COUNT = 3000;
+
+        // Формула сердца (правильная ориентация)
+        function heartX(t, scale = 1) {
+            return scale * 16 * Math.pow(Math.sin(t), 3);
+        }
+        function heartY(t, scale = 1) {
+            // Отрицательный знак, чтобы сердце было правильно ориентировано (вершиной вверх)
+            return -scale * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+        }
+
+        // Инициализация частиц
+        function initParticles() {
+            particles = [];
+            // Создаем точки в случайных позициях по всему экрану
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                // Параметр t для сердечка (каждая точка получит своё место в финальном сердце)
+                const t = (i / PARTICLE_COUNT) * 2 * Math.PI;
+                // Финальная позиция (центрированная)
+                const finalX = heartX(t, 14);
+                const finalY = heartY(t, 14);
+                
+                particles.push({
+                    t: t,
+                    finalX: finalX,
+                    finalY: finalY,
+                    // Начальные позиции (случайные по всему экрану)
+                    startX: (Math.random() - 0.5) * width * 1.5,
+                    startY: (Math.random() - 0.5) * height * 1.5,
+                    currentX: 0,
+                    currentY: 0,
+                    // Для взрыва
+                    explosionOffsetX: 0,
+                    explosionOffsetY: 0,
+                    explosionSpeedX: (Math.random() - 0.5) * 14,
+                    explosionSpeedY: (Math.random() - 0.5) * 14 - 4, // небольшой всплеск вверх
+                });
+            }
+        }
+
+        // Обновление размеров canvas
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initParticles(); // пересоздаём частицы с новыми размерами
+        }
+
+        // Преобразование координат сердца в экранные координаты
+        function getScreenPosition(particle, progress) {
+            // progress: 0 - начальное случайное положение, 1 - финальное сердце
+            const baseX = width / 2;
+            const baseY = height / 2;
+
+            if (state === 'forming' || (state === 'idle' && progress !== undefined)) {
+                // Интерполяция между начальной и финальной позицией
+                const x = particle.startX * (1 - progress) + particle.finalX * progress;
+                const y = particle.startY * (1 - progress) + particle.finalY * progress;
+                return { x: baseX + x, y: baseY + y };
+            } 
+            else if (state === 'exploding' || state === 'showMessage') {
+                // Базовое положение в сердце (прогресс = 1)
+                const baseParticleX = baseX + particle.finalX;
+                const baseParticleY = baseY + particle.finalY;
+                // Добавляем взрывное смещение
+                return {
+                    x: baseParticleX + particle.explosionOffsetX,
+                    y: baseParticleY + particle.explosionOffsetY
+                };
+            }
+            else {
+                // idle (случайные позиции)
+                return { x: baseX + particle.startX, y: baseY + particle.startY };
+            }
+        }
+
+        // Анимация
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Обновление состояния
+            const now = performance.now() / 1000; // seconds
+
+            if (state === 'forming') {
+                formingProgress += formingSpeed;
+                if (formingProgress >= 1) {
+                    formingProgress = 1;
+                    state = 'exploding';
+                    explosionTime = now;
+                }
+            } 
+            else if (state === 'exploding') {
+                const dt = Math.min(now - explosionTime, explosionDuration);
+                
+                // Обновляем смещение частиц по простой физике (линейно)
+                particles.forEach(p => {
+                    p.explosionOffsetX += p.explosionSpeedX * 0.05;
+                    p.explosionOffsetY += p.explosionSpeedY * 0.05;
+                    // добавляем небольшое затухание скорости
+                    p.explosionSpeedX *= 0.98;
+                    p.explosionSpeedY *= 0.98;
+                });
+
+                if (dt >= explosionDuration) {
+                    state = 'showMessage';
+                    messageEl.classList.add('show');
+                }
+            }
+
+            // Отрисовка частиц
+            particles.forEach(p => {
+                let pos;
+                if (state === 'forming') {
+                    pos = getScreenPosition(p, formingProgress);
+                } else if (state === 'exploding' || state === 'showMessage') {
+                    pos = getScreenPosition(p);
+                } else {
+                    // idle - случайное положение
+                    pos = { x: width/2 + p.startX, y: height/2 + p.startY };
+                }
+
+                // Радиус точки
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff4d6d';
+                ctx.shadowColor = '#ff1a4c';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+            });
+            // Сброс тени
+            ctx.shadowBlur = 0;
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Запуск формирования сердца
+        function startForming() {
+            // Скрываем сообщение, если было
+            messageEl.classList.remove('show');
+            
+            // Если уже идёт анимация, сбрасываем частицы в случайные позиции
+            // Перемешиваем начальные позиции
+            particles.forEach(p => {
+                p.startX = (Math.random() - 0.5) * width * 1.5;
+                p.startY = (Math.random() - 0.5) * height * 1.5;
+                p.explosionOffsetX = 0;
+                p.explosionOffsetY = 0;
+                p.explosionSpeedX = (Math.random() - 0.5) * 14;
+                p.explosionSpeedY = (Math.random() - 0.5) * 14 - 4;
+            });
+            
+            state = 'forming';
+            formingProgress = 0;
+        }
+
+        // Обработчик кнопки
+        startBtn.addEventListener('click', () => {
+            startForming();
+        });
+
+        // Инициализация при загрузке
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        // Старт
+        resizeCanvas();
+        animate();
+
+        // Начальное состояние
+        state = 'idle';
+    </script>
+</body>
+</html>
