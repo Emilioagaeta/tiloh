@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Amour</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0a0a0a;
+            font-family: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, #1a1a1a 0%, #050505 100%);
+            z-index: -2;
+        }
+
+        .hearts-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .heart {
+            position: absolute;
+            bottom: -100px;
+            font-size: 1.6rem;
+            color: rgba(220, 220, 220, 0.35);
+            user-select: none;
+            pointer-events: none;
+            animation: floatHeart linear infinite;
+            filter: grayscale(100%);
+        }
+
+        @keyframes floatHeart {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-120vh) rotate(20deg);
+                opacity: 0;
+            }
+        }
+
+        .luxury-container {
+            position: relative;
+            z-index: 20;
+            max-width: 880px;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.75);
+            backdrop-filter: blur(14px);
+            border-radius: 48px;
+            padding: 30px 28px 42px 28px;
+            box-shadow: 0 35px 55px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .title {
+            font-size: 2.7rem;
+            font-weight: 500;
+            letter-spacing: 3px;
+            color: #e8e8e8;
+            text-transform: uppercase;
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 12px;
+        }
+
+        .title span {
+            font-weight: 300;
+            color: #aaaaaa;
+            font-style: italic;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            letter-spacing: 3px;
+            color: #b9b9b9;
+            margin-bottom: 28px;
+            font-weight: 300;
+            text-transform: uppercase;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 9px 24px;
+        }
+
+        .video-slot {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: grayscale(100%) contrast(1.05);
+            cursor: pointer;
+        }
+
+        .love-quote {
+            margin-top: 32px;
+            font-size: 0.9rem;
+            color: #aaaaaa;
+            font-style: italic;
+            letter-spacing: 1px;
+            border-top: 1px dashed rgba(255,255,255,0.15);
+            padding-top: 22px;
+        }
+
+        @media (max-width: 680px) {
+            body { padding: 1rem; }
+            .luxury-container { padding: 20px 18px 30px; }
+            .title { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hearts-bg" id="heartsBg"></div>
+
+<div class="luxury-container">
+    <div class="title">
+        À <span>M A   C H E R I E</span>
+    </div>
+    <div class="subtitle">
+        ❝ l'amour éternel ❞
+    </div>
+
+    <div class="video-slot">
+        <video id="loveVideo" controls controlsList="nodownload">
+            <source src="https://www.image2url.com/r2/default/videos/1779209986386-be506851-ad5a-4826-8725-f520cbd779e3.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div class="love-quote">
+        « Ты — моё самое красивое воспоминание и всё моё будущее. »
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Сердечки на фоне
+        const heartsContainer = document.getElementById('heartsBg');
+        const heartSymbols = ['❤', '🤍', '🖤', '❣️', '♡', '♥', '🩶'];
+        
+        function createHeart() {
+            const heartDiv = document.createElement('div');
+            heartDiv.classList.add('heart');
+            heartDiv.innerHTML = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+            
+            const size = Math.random();
+            if (size < 0.33) heartDiv.style.fontSize = '1rem';
+            else if (size < 0.66) heartDiv.style.fontSize = '1.7rem';
+            else heartDiv.style.fontSize = '2.4rem';
+            
+            heartDiv.style.left = Math.random() * 100 + '%';
+            heartDiv.style.bottom = '-70px';
+            heartDiv.style.animationDuration = 8 + Math.random() * 14 + 's';
+            heartDiv.style.animationDelay = Math.random() * 12 + 's';
+            heartDiv.style.opacity = 0.3 + Math.random() * 0.45;
+            
+            heartsContainer.appendChild(heartDiv);
+            heartDiv.addEventListener('animationend', () => heartDiv.remove());
+        }
+        
+        setInterval(() => {
+            for (let i = 0; i < (Math.random() > 0.6 ? 2 : 1); i++) createHeart();
+        }, 400);
+        
+        for (let i = 0; i < 50; i++) setTimeout(() => createHeart(), i * 50);
+        
+        // Видео: перетаскивание файла = добавление видео
+        const video = document.getElementById('loveVideo');
+        const source = video.querySelector('source');
+        
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length && files[0].type.startsWith('video/')) {
+                const url = URL.createObjectURL(files[0]);
+                source.src = url;
+                video.load();
+                video.play();
+                
+                // Взрыв сердечек
+                for (let i = 0; i < 80; i++) setTimeout(() => createHeart(), i * 12);
+            }
+        });
+        
+        // Клик по видео = ещё сердца
+        video.addEventListener('click', () => {
+            for (let i = 0; i < 35; i++) setTimeout(() => createHeart(), i * 15);
+        });
+    })();
+</script>
+</body>
+</html>
